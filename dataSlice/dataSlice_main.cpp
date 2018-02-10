@@ -137,6 +137,27 @@ void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
 	}
 }
 
+//==================================================================
+void read_ContactsRaw(const char* filename, char** buf) {
+
+	if(filename==nullptr and buf!=nullptr){
+		perror("Error read_ContactsRaw input");
+	}
+
+	FILE *pFile = fopen(filename,"rb");
+	if (pFile==NULL) {fputs ("File error",stderr); exit (1);}
+
+	fseek(pFile, 0, SEEK_END);
+	long lSize = ftell(pFile);
+	rewind(pFile);
+
+	*buf = (char*) malloc (sizeof(char)*(lSize+1));
+	if (*buf == nullptr) {fputs ("Memory error",stderr); exit (2);}
+	(*buf)[lSize] = '\0';
+
+	fread(*buf, 1, lSize, pFile);
+	fclose(pFile);
+}
 void List_ctor_file(List* _this, const char* filename){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
@@ -160,10 +181,9 @@ void List_getStr(List* _this, Str* (*dst), int* num){
 	*num = _this->ListNum;
 }
 
-//==================================================================
 auto Data_Slice(List* v) {
 	//vector<List> data;
-	vector<vector<string>> data;
+	vector<vector<string>> out_data;
 
 	size_t item_len = 0, idx = 0, line_len=0;
 	size_t end_mode = 0; // 0.補0;  1.補英文
@@ -176,7 +196,7 @@ auto Data_Slice(List* v) {
 	auto Append_Num = [&]() {
 		if(!isalpha(next_Str[0])) { // 下一個是數字就接著補上
 			++idx, l=l->next;
-			data[line_len-1][data[line_len-1].size()-1] += next_Str;
+			out_data[line_len-1][out_data[line_len-1].size()-1] += next_Str;
 		}
 		--item_len;
 	};
@@ -190,11 +210,11 @@ auto Data_Slice(List* v) {
 		if(item_len == 0){
 			++line_len;
 			item_len = stoi(currStr);
-			data.push_back(vector<string> {currStr});
+			out_data.push_back(vector<string> {currStr});
 		}
 		// 非頭長度是英文遞減
 		else if(isalpha(currStr[0])) {
-			data[line_len-1].push_back(currStr);
+			out_data[line_len-1].push_back(currStr);
 			if(item_len == 1) { // 最後一個檢查
 				if(isalpha(next2_Str[0])) { // 最後一組缺數字
 					--item_len;
@@ -211,46 +231,30 @@ auto Data_Slice(List* v) {
 	// 結尾處理
 	if(item_len==1 and end_mode ==0) {
 		// 補一組
-		data[line_len-1].push_back(currStr);
+		out_data[line_len-1].push_back(currStr);
 		// 補數字
 		Append_Num();
 	} else {
 		if(end_mode==0) {
-			data.push_back(vector<string> {currStr}); // 補 0
+			out_data.push_back(vector<string> {currStr}); // 補 0
 		} else {
 			++idx, l=l->next;
-			data[line_len-1].push_back(next_Str); // 補英文
+			out_data[line_len-1].push_back(next_Str); // 補英文
 		}
 	}
 
-	return data;
+	return out_data;
 }
 
 
 //==================================================================
 int main(int argc, char const *argv[]) {
-
-	
-
 	// 初始化數據
-
 	List* list = List_new();
 	
 	// 載入文字(自動消除空格與跳行)
 	List_ctor_file(list, "str.txt");
 	//List_print(&list);
-
-	// 輸出整後後的陣列
-	char** Contact = nullptr;
-	int num = 0;
-	List_getStr(list, &Contact, &num);
-
-	vector<string> v(num);
-	// 印出
-	for(size_t i = 0; i < num; i++){
-		//cout << Contact[i] << endl;
-		v[i] = string(Contact[i]);
-	}
 	
 	// 解析格式
 	auto data = Data_Slice(list);

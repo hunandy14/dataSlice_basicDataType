@@ -111,7 +111,6 @@ void List_delete(List* _this){
 void List_print(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
-	if(_this==NULL) 
 	for(ListNode* l=_this->listHead->next; l; l=l->next){
 		cout << l->data << endl;
 	}
@@ -129,6 +128,7 @@ void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
 
 	char* buff = (char*)malloc(sizeof(char)*strlen(src)+1);
 	strcpy(buff, src);
+	
 	for(char* pch = strtok(buff, delim); pch; pch = strtok(NULL, delim)){
 		List_append(_this, pch);
 	}
@@ -181,38 +181,40 @@ void Data_Slice(List*** dst, int* lenth, const List* src) {
 	ListNode* l=src->listHead->next;
 	char* currStr = nullptr;
 	char* nextStr = nullptr;
-	// 補數字
+
+	// 下一個是數字就補上
 	auto Append_Num = [&]() {
-		if(!isalpha(nextStr[0])) { // 下一個是數字就接著補上
+		if(nextStr and !isalpha(nextStr[0])) {
 			++idx, l=l->next;
 			List_basic_append(temp_data[line_len-1]->listEnd, nextStr);
 		}
 		--item_len;
 	};
-
 	// 開始處理
 	for(; idx < (src->ListNum)-2; ++idx and l, l=l->next) {
 		currStr = l->data;
 		nextStr = l->next->data;
 		char* next2_Str = l->next->next->data;
-		// 是頭長度時
+		// 是開頭長度時新增鏈結
 		if(item_len == 0){
 			item_len = atoi(currStr);
 			temp_data[line_len] = List_new();
 			List_append(temp_data[line_len], currStr);
 			++line_len;
 		}
-		// 非頭長度是英文遞減
+		// 非開頭長度時遞減項目，且新增英文與數字
 		else if(isalpha(currStr[0])) {
 			List_append(temp_data[line_len-1], currStr);
-			if(item_len == 1) { // 最後一個檢查
-				if(isalpha(next2_Str[0])) { // 最後一組缺數字
+			// 最後一個項目檢查結尾
+			if(item_len == 1) {
+				// 假如最後一組是英文
+				if(isalpha(next2_Str[0])) {
 					--item_len;
 					end_mode = 1;
 					continue;
 				}
 			}
-			// 補數字
+			// 下一個是數字就補上
 			Append_Num();
 			end_mode = 0;
 		}
@@ -220,20 +222,26 @@ void Data_Slice(List*** dst, int* lenth, const List* src) {
 
 	// 結尾處理
 	currStr = l->data;
-	nextStr = l->next->data;
-	if(item_len==1 and end_mode ==0) {
-		// 補一組
-		List_append(temp_data[line_len-1], currStr);
-		// 補數字
-		Append_Num();
+	if(l->next) {
+		nextStr = l->next->data;
 	} else {
-		if(end_mode==0) {
+		nextStr = nullptr;
+	}
+
+	if(item_len==1 and end_mode ==0) { // 還缺一組英文和數字
+		List_append(temp_data[line_len-1], currStr);
+		Append_Num();
+	} else { // 還缺單獨英文或數字
+		if(item_len==0 and end_mode==0) { // 補0
 			temp_data[line_len] = List_new();
 			List_append(temp_data[line_len], currStr);
-		} else {
+			++line_len;
+		} else if (item_len==2 and end_mode==0) {// 補英文
 			++idx, l=l->next;
-			List_append(temp_data[line_len-1], nextStr);
-
+			List_append(temp_data[line_len-1], currStr);
+			currStr = l->data;
+			List_append(temp_data[line_len-1], currStr);
+			Append_Num();
 		}
 	}
 
@@ -252,7 +260,8 @@ int main(int argc, char const *argv[]) {
 	List* list = List_new();
 
 	// 載入文字(切割空格與跳行)
-	List_loadFile(list, "str.txt");
+	List_loadFile(list, "str2.txt");
+	//List_print(list);
 	//List_loadConsole(list);
 
 	// 解析格式

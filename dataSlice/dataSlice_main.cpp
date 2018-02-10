@@ -5,13 +5,8 @@ By   : CharlotteHonG
 Final: 2018/02/10
 *****************************************************************/
 #include <iostream>
-#include <fstream>
-#include <string>
 #include <cstring>
-#include <vector>
-#include <cctype>
 using namespace std;
-constexpr char file_name[] = "str.txt";
 
 #define __FILENAME__ strrchr("\\" __FILE__, '\\') + 1
 #define POINT_IS_NULL(msg) \

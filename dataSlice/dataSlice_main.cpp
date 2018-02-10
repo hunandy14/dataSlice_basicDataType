@@ -4,23 +4,32 @@ Date : 2017/06/06
 By   : CharlotteHonG
 Final: 2018/02/10
 *****************************************************************/
-#include <iostream>
-#include <cstring>
-using namespace std;
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
 #define __FILENAME__ strrchr("\\" __FILE__, '\\') + 1
 #define POINT_IS_NULL(msg) \
 	printf("%s \t\t # %s::%d --> \"%s()\" \n" , \
 		(msg) , __FILENAME__, __LINE__, __FUNCTION__)
 
+#ifndef __cplusplus
+	#define nullptr NULL
+	#define or ||
+	#define and &&
+	#define OR ||
+	#define AND &&
+#endif // !__cplusplus
+
 
 //==================================================================
-typedef struct ListNode List_basic;
+typedef struct ListNode ListNode;
 struct ListNode{
 	char* data;
 	ListNode* next;
 };
-void List_basic_ctor(ListNode* _this, const char* s = nullptr){
+void List_basic_ctor(ListNode* _this, const char* s){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	char* buff = nullptr;
@@ -38,7 +47,7 @@ void List_basic_dtor(ListNode* _this){
 	_this->data = nullptr;
 	_this->next = nullptr;
 }
-ListNode* List_basic_new(const char* s = nullptr){
+ListNode* List_basic_new(const char* s){
 	ListNode* _this = (ListNode*)malloc(sizeof(ListNode));
 	List_basic_ctor(_this, s);
 	return _this;
@@ -73,7 +82,7 @@ struct List{
 void List_ctor(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
-	_this->listHead = List_basic_new();
+	_this->listHead = List_basic_new(nullptr);
 	_this->listEnd = _this->listHead;
 	_this->ListNum = 0;
 }
@@ -112,7 +121,7 @@ void List_print(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	for(ListNode* l=_this->listHead->next; l; l=l->next){
-		cout << l->data << endl;
+		printf("%s, ", l->data);
 	}
 }
 void List_append(List* _this, const char* s){
@@ -123,7 +132,7 @@ void List_append(List* _this, const char* s){
 	_this->listEnd = new_node;       // 更新結尾點
 	++_this->ListNum;                // 累計計數
 }
-void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
+void List_strSlice(List* _this, const char* src, const char* delim){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	char* buff = (char*)malloc(sizeof(char)*strlen(src)+1);
@@ -159,47 +168,42 @@ void List_loadFile(List* _this, const char* filename){
 
 	char* contacts = nullptr;
 	read_ContactsRaw(filename, &contacts);
-	List_strSlice(_this, contacts);
+	List_strSlice(_this, contacts, " \n\r\t");
 	free(contacts);
 }
 void List_loadConsole(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
-	for(char s[16],a;~scanf("%s",&s);){
+	for(char s[16]; ~scanf("%s",s);){
 		List_append(_this, s);
 	}
 }
+
+
+//==================================================================
 void Data_Slice(List*** dst, int* lenth, const List* src) {
 	if (!dst) { POINT_IS_NULL("point is NULL"); return; }
 	if (*dst) { POINT_IS_NULL("point is invalid"); return; }
 
 	List** temp_data = (List**)malloc(sizeof(List*) * src->ListNum);
+	int item_len = 0, line_len=0;
 
-	int item_len = 0, idx = 0, line_len=0;
-	int end_mode = 0; // 0.補0;  1.補英文
-	
-	ListNode* l=src->listHead->next;
-	char* currStr = nullptr;
-	char* nextStr = nullptr;
+	// 補足越界讀取的緩衝
+	List_append((List*)src, "");
+	List_append((List*)src, "");
 
-	// 下一個是數字就補上
-	auto Append_Num = [&]() {
-		if(nextStr and !isalpha(nextStr[0])) {
-			++idx, l=l->next;
-			List_basic_append(temp_data[line_len-1]->listEnd, nextStr);
-		}
-		--item_len;
-	};
 	// 開始處理
-	for(; idx < (src->ListNum)-2; ++idx and l, l=l->next) {
-		currStr = l->data;
-		nextStr = l->next->data;
-		char* next2_Str = l->next->next->data;
+	for(ListNode* l = src->listHead->next; l->next->next; l=l->next) {
+		const char* currStr = l->data;
+		const char* nextStr = l->next->data;
+		const char* next2_Str = l->next->next->data;
 		// 是開頭長度時新增鏈結
 		if(item_len == 0){
+			char buf[32];
 			item_len = atoi(currStr);
+			sprintf(buf,"%d",item_len);
 			temp_data[line_len] = List_new();
-			List_append(temp_data[line_len], currStr);
+			List_append(temp_data[line_len], buf);
 			++line_len;
 		}
 		// 非開頭長度時遞減項目，且新增英文與數字
@@ -210,46 +214,22 @@ void Data_Slice(List*** dst, int* lenth, const List* src) {
 				// 假如最後一組是英文
 				if(isalpha(next2_Str[0])) {
 					--item_len;
-					end_mode = 1;
 					continue;
 				}
 			}
 			// 下一個是數字就補上
-			Append_Num();
-			end_mode = 0;
+			if(!isalpha(nextStr[0])) {
+				l=l->next;
+				List_basic_append(temp_data[line_len-1]->listEnd, nextStr);
+			}
+			--item_len;
 		}
 	}
-
-	// 結尾處理
-	currStr = l->data;
-	if(l->next) {
-		nextStr = l->next->data;
-	} else {
-		nextStr = nullptr;
-	}
-
-	if(item_len==1 and end_mode ==0) { // 還缺一組英文和數字
-		List_append(temp_data[line_len-1], currStr);
-		Append_Num();
-	} else { // 還缺單獨英文或數字
-		if(item_len==0 and end_mode==0) { // 補0
-			temp_data[line_len] = List_new();
-			List_append(temp_data[line_len], currStr);
-			++line_len;
-		} else if (item_len==2 and end_mode==0) {// 補英文
-			++idx, l=l->next;
-			List_append(temp_data[line_len-1], currStr);
-			currStr = l->data;
-			List_append(temp_data[line_len-1], currStr);
-			Append_Num();
-		}
-	}
-
 	// 輸出數據
 	*lenth = line_len;
 	*dst = (List**)malloc(sizeof(List*) * line_len);
 	for(int i = 0; i < line_len; i++){
-		(*dst)[i] = temp_data[i];
+		(*dst)[i] = temp_data[i]; // move
 	} if(temp_data) free(temp_data);
 }
 
@@ -261,8 +241,8 @@ int main(int argc, char const *argv[]) {
 
 	// 載入文字(切割空格與跳行)
 	List_loadFile(list, "str2.txt");
-	//List_print(list);
 	//List_loadConsole(list);
+	//List_print(list);
 
 	// 解析格式
 	int lenth = 0;
@@ -273,10 +253,10 @@ int main(int argc, char const *argv[]) {
 	for(int j = 0; j < lenth; j++){
 		ListNode* node = dst[j]->listHead->next;
 		for(ListNode* l = node; l; l = l->next){
-			cout << l->data;
-			if(l->next) 	cout <<  ", ";
-		} cout << endl;
-	} cout << endl;
+			printf("%s", l->data);
+			if(l->next) printf(", ");
+		} printf("-\n");
+	} printf("\n");
 
 
 

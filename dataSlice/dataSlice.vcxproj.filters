@@ -26,6 +26,9 @@
     <Text Include="str.txt">
       <Filter>資源檔</Filter>
     </Text>
+    <Text Include="str2.txt">
+      <Filter>資源檔</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <None Include="log.md">

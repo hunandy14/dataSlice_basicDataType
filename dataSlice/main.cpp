@@ -13,29 +13,16 @@ Final: 2017/06/06
 using namespace std;
 constexpr char file_name[] = "str.txt";
 
+#define __FILENAME__ strrchr("\\" __FILE__, '\\') + 1
+#define POINT_IS_NULL(msg) \
+	printf("%s \t\t # %s::%d --> \"%s()\" \n" , \
+		(msg) , __FILENAME__, __LINE__, __FUNCTION__)
+
 vector<string> ReadFile(string file_name);
 vector<vector<string>> Data_Slice(vector<string>& v);
-void dataSlice1(){
-#define READ_FILE
-#ifdef READ_FILE
-	auto list = ReadFile(file_name);
-#else
-	vector<string> list;
-	for(string str; cin >> str;)
-		list.emplace_back(str);
-#endif // READ_FILE
-	// 解析格式
-	auto data = Data_Slice(list);
-	// 查看二維陣列
-	for(auto&& j : data) {
-		for(auto&& i : j) {
-			cout << i << ", ";
-		}cout << endl;
-	}
-}
-
 
 void read_ContactsRaw(const char* filename, char** buf) {
+
 	if(filename==nullptr and buf!=nullptr){
 		perror("Error read_ContactsRaw input");
 	}
@@ -54,6 +41,7 @@ void read_ContactsRaw(const char* filename, char** buf) {
 	fread(*buf, 1, lSize, pFile);
 	fclose(pFile);
 }
+
 //==================================================================
 typedef char* Str;
 typedef struct List_basic List_basic;
@@ -67,161 +55,163 @@ struct List{
 	List_basic* listEnd;
 	int ListNum;
 };
-void List_print(List* list){
-	List_basic*& listHead = list->listHead;
-	List_basic*& listEnd = list->listEnd;
-	int& ListNum = list->ListNum;
+void List_print(List* _this){
+	if (!_this) POINT_IS_NULL("point is NULL");
 
-	for(List_basic* l=listHead->next; l; l=l->next){
+	if(_this==NULL) 
+	for(List_basic* l=_this->listHead->next; l; l=l->next){
 		cout << l->data << endl;
 	}
 }
-void List_append(List* list, const char* s){
-	List_basic*& listHead = list->listHead;
-	List_basic*& listEnd = list->listEnd;
-	int& ListNum = list->ListNum;
+void List_append(List* _this, const char* s){
+	if (!_this) POINT_IS_NULL("point is NULL");
 
-	Str temp = new char[strlen(s)];
+	char* temp = (char*)malloc(sizeof(char)*strlen(s)+1);
 	strcpy(temp, s);
 
-	listEnd->next = (List_basic*)malloc(sizeof(List_basic));
-	listEnd = listEnd->next;
-	++ListNum;
+	_this->listEnd->next = (List_basic*)malloc(sizeof(List_basic));
+	_this->listEnd = _this->listEnd->next;
+	++_this->ListNum;
 
-	listEnd->data = temp;
-	listEnd->next = nullptr;
+	_this->listEnd->data = temp;
+	_this->listEnd->next = nullptr;
 }
-void List_strSlice(List* list, const char* src, const char* delim = " \n\r"){
-	List_basic*& listHead = list->listHead;
-	List_basic*& listEnd = list->listEnd;
-	int& ListNum = list->ListNum;
+void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
+	if (!_this) POINT_IS_NULL("point is NULL");
 
-	Str buff = (Str)malloc(sizeof(char)*strlen(src));
+	char* buff = (char*)malloc(sizeof(char)*strlen(src)+1);
 	strcpy(buff, src);
 	for(char* pch = strtok(buff, delim); pch; pch = strtok(NULL, delim)){
-		List_append(list, pch);
+		List_append(_this, pch);
 	}
 }
 
-void List_ctor(List* list, const char* filename){
-	List_basic*& listHead = list->listHead;
-	List_basic*& listEnd = list->listEnd;
-	int& ListNum = list->ListNum;
+void List_ctor(List* _this, const char* filename){
+	if (!_this) POINT_IS_NULL("point is NULL");
 
 	char* contacts = nullptr;
 	read_ContactsRaw(filename, &contacts);
-	List_strSlice(list, contacts);
+	List_strSlice(_this, contacts);
 	free(contacts);
 }
-void List_dtor(List* list){
-	List_basic*& listHead = list->listHead;
-	List_basic*& listEnd = list->listEnd;
-	int& ListNum = list->ListNum;
+void List_dtor(List* _this){
+	if (!_this) POINT_IS_NULL("point is NULL");
 
-	if(listHead->next){
+	if(_this->listHead){
 		List_basic* temp = nullptr;
-		for(List_basic* l=listHead->next; l; l=l->next){
-			if(temp){
-				free(temp);
-			}
+		for(List_basic* l=_this->listHead->next; l; l=l->next){
+			if(temp) free(temp);
 			temp=l;
-		} 
-		free(temp);
+		} if(temp) free(temp);
 
-		listHead->next = nullptr;
-		ListNum = 0;
+		free(_this->listHead);
+		_this->listHead = nullptr;
+		_this->ListNum = 0;
 	}
 }
 
-void List_getStr(List* list, Str** dst, int* num){
-	List_basic*& listHead = list->listHead;
-	List_basic*& listEnd = list->listEnd;
-	int& ListNum = list->ListNum;
+void List_getStr(List* _this, Str* (*dst), int* num){
+	if (!_this) POINT_IS_NULL("point is NULL");
 
-	Str* temp = (Str*)malloc(sizeof(Str)*(ListNum-1));
+	char** temp = (char**)malloc(sizeof(char*)*(_this->ListNum-1));
 	size_t idx = 0;
-	List_basic* l=listHead->next;
+	List_basic* l=_this->listHead->next;
 	for(;l; l=l->next){
-		temp[idx] = (Str)malloc(sizeof(char)*strlen(l->data));
+		temp[idx] = (char*)malloc(sizeof(char)*strlen(l->data)+1);
 		strcpy(temp[idx++], l->data);
 	}
 
 	*dst = temp;
-	*num = ListNum;
-	List_dtor(list);
+	*num = _this->ListNum;
 }
 
-
 //==================================================================
-Str** Data_Slice(const Str* v) {
-	/*
+auto Data_Slice(List* v) {
+	//vector<List> data;
 	vector<vector<string>> data;
+
 	size_t item_len = 0, idx = 0, line_len=0;
 	size_t end_mode = 0; // 0.補0;  1.補英文
 	
+	List_basic* l=v->listHead->next;
+	Str currStr = nullptr;
+	Str next_Str = nullptr;
+	Str next2_Str = nullptr;
 	// 補數字
 	auto Append_Num = [&]() {
-		if(!isalpha(v[idx + 1][0])) // 下一個是數字就接著補上
-			data[line_len-1][data[line_len-1].size()-1] += v[++idx];
+		if(!isalpha(next_Str[0])) { // 下一個是數字就接著補上
+			++idx, l=l->next;
+			data[line_len-1][data[line_len-1].size()-1] += next_Str;
+		}
 		--item_len;
 	};
 
 	// 開始處理
-	for(; idx < v.size()-2; ++idx) {
+	for(; idx < (v->ListNum)-2; ++idx and l, l=l->next) {
+		currStr   = l->data;
+		next_Str  = l->next->data;
+		next2_Str = l->next->next->data;
 		// 是頭長度時
 		if(item_len == 0){
 			++line_len;
-			item_len = stoi(v[idx]);
-			data.emplace_back(vector<string> {v[idx]});
+			item_len = stoi(currStr);
+			data.push_back(vector<string> {currStr});
 		}
 		// 非頭長度是英文遞減
-		else if(isalpha(v[idx][0])) {
-			data[line_len-1].emplace_back(v[idx]);
+		else if(isalpha(currStr[0])) {
+			data[line_len-1].push_back(currStr);
 			if(item_len == 1) { // 最後一個檢查
-				if(isalpha(v[idx + 2][0])) { // 最後一組缺數字
+				if(isalpha(next2_Str[0])) { // 最後一組缺數字
 					--item_len;
 					end_mode = 1;
 					continue;
 				}
 			}
-			Append_Num(); // 補數字
+			// 補數字
+			Append_Num();
 			end_mode = 0;
 		}
 	}
+
 	// 結尾處理
 	if(item_len==1 and end_mode ==0) {
 		// 補一組
-		data[line_len-1].emplace_back(v[idx]);
+		data[line_len-1].push_back(currStr);
+		// 補數字
 		Append_Num();
 	} else {
 		if(end_mode==0) {
-			data.emplace_back(vector<string> {v[idx]}); // 補 0
+			data.push_back(vector<string> {currStr}); // 補 0
 		} else {
-			data[line_len-1].emplace_back(v[++idx]); // 補英文
+			++idx, l=l->next;
+			data[line_len-1].push_back(next_Str); // 補英文
 		}
 	}
+
 	return data;
-	*/
-	return nullptr;
 }
 
 
 //==================================================================
 int main(int argc, char const *argv[]) {
+
+	
+
+	// 初始化數據
 	List list{};
-	list.listHead = new List_basic{};
+	list.listHead = (List_basic*)malloc(sizeof(List_basic));
 	list.listEnd = list.listHead;
 	list.ListNum = 0;
 	
 	// 載入文字(自動消除空格與跳行)
 	List_ctor(&list, "str.txt");
-	List_print(&list);
+	//List_print(&list);
 
-	
 	// 輸出整後後的陣列
-	Str* Contact = nullptr;
+	char** Contact = nullptr;
 	int num = 0;
 	List_getStr(&list, &Contact, &num);
+
 	vector<string> v(num);
 	// 印出
 	for(size_t i = 0; i < num; i++){
@@ -230,12 +220,22 @@ int main(int argc, char const *argv[]) {
 	}
 	
 	// 解析格式
-	auto data = Data_Slice(v);
+	auto data = Data_Slice(&list);
+	//auto data = Data_Slice(v);
 	// 查看二維陣列
+
+	/*for(size_t j = 0; j < data.size(); j++){
+		List* _this = &data[j];
+		for(List_basic* l=_this->listHead->next; l; l=l->next){
+			cout << l->data <<  ", ";
+		} cout << endl;
+	} cout << endl;*/
 	for(auto&& j : data) {
 		for(auto&& i : j) {
 			cout << i << ", ";
-		}cout << endl;
+		}cout << "---" << endl;
 	}
-	
+
+
+	List_dtor(&list);
 }

@@ -143,6 +143,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="dataSlice.c" />
     <ClCompile Include="dataSlice.cpp" />
     <ClCompile Include="dataSlice_main.cpp" />
   </ItemGroup>
@@ -152,6 +153,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="log.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="dataSlice.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

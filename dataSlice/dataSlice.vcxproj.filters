@@ -21,6 +21,9 @@
     <ClCompile Include="dataSlice_main.cpp">
       <Filter>來源檔案</Filter>
     </ClCompile>
+    <ClCompile Include="dataSlice.c">
+      <Filter>來源檔案</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="str.txt">
@@ -34,5 +37,10 @@
     <None Include="log.md">
       <Filter>資源檔</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="dataSlice.h">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -2,7 +2,7 @@
 Name : 讀取特定格式文件
 Date : 2017/06/06
 By   : CharlotteHonG
-Final: 2017/06/06
+Final: 2018/02/10
 *****************************************************************/
 #include <iostream>
 #include <fstream>
@@ -20,11 +20,9 @@ constexpr char file_name[] = "str.txt";
 
 
 //==================================================================
-typedef char* Str;
-
 typedef struct List_basic List_basic;
 struct List_basic{
-	Str data;
+	char* data;
 	List_basic* next;
 };
 void List_basic_ctor(List_basic* _this, const char* s = nullptr){
@@ -175,18 +173,25 @@ void List_loadFile(List* _this, const char* filename){
 	List_strSlice(_this, contacts);
 	free(contacts);
 }
-void Data_Slice(List*** dst, int* lenth, List* v) {
+void List_loadConsole(List* _this){
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+
+	for(char s[16],a;~scanf("%s",&s);){
+		List_append(_this, s);
+	}
+}
+void Data_Slice(List*** dst, int* lenth, const List* v) {
 	if (!dst) { POINT_IS_NULL("point is NULL"); return; }
 	if (*dst) { POINT_IS_NULL("point is invalid"); return; }
 
 	List** temp_data = (List**)malloc(sizeof(List*) * v->ListNum);
 
-	size_t item_len = 0, idx = 0, line_len=0;
-	size_t end_mode = 0; // 0.補0;  1.補英文
+	int item_len = 0, idx = 0, line_len=0;
+	int end_mode = 0; // 0.補0;  1.補英文
 	
 	List_basic* l=v->listHead->next;
-	Str currStr = nullptr;
-	Str nextStr = nullptr;
+	char* currStr = nullptr;
+	char* nextStr = nullptr;
 	// 補數字
 	auto Append_Num = [&]() {
 		if(!isalpha(nextStr[0])) { // 下一個是數字就接著補上
@@ -200,7 +205,7 @@ void Data_Slice(List*** dst, int* lenth, List* v) {
 	for(; idx < (v->ListNum)-2; ++idx and l, l=l->next) {
 		currStr = l->data;
 		nextStr = l->next->data;
-		Str next2_Str = l->next->next->data;
+		char* next2_Str = l->next->next->data;
 		// 是頭長度時
 		if(item_len == 0){
 			item_len = stoi(currStr);
@@ -246,10 +251,9 @@ void Data_Slice(List*** dst, int* lenth, List* v) {
 	// 輸出數據
 	*lenth = line_len;
 	*dst = (List**)malloc(sizeof(List*) * line_len);
-	for(size_t i = 0; i < line_len; i++){
+	for(int i = 0; i < line_len; i++){
 		(*dst)[i] = temp_data[i];
 	} if(temp_data) free(temp_data);
-
 }
 
 
@@ -261,6 +265,8 @@ int main(int argc, char const *argv[]) {
 
 	// 載入文字(切割空格與跳行)
 	List_loadFile(list, "str.txt");
+	//List_loadConsole(list);
+
 
 	// 解析格式
 	int lenth = 0;
@@ -268,10 +274,11 @@ int main(int argc, char const *argv[]) {
 	Data_Slice(&dst, &lenth, list);
 
 	// 查看二維陣列
-	for(size_t j = 0; j < lenth; j++){
+	for(int j = 0; j < lenth; j++){
 		List* _this = dst[j];
 		for(List_basic* l=_this->listHead->next; l; l=l->next){
-			cout << l->data <<  ", ";
+			cout << l->data;
+			if(l->next) 	cout <<  ", ";
 		} cout << endl;
 	} cout << endl;
 
@@ -279,7 +286,7 @@ int main(int argc, char const *argv[]) {
 
 	// 釋放內存
 	if(dst){
-		for(size_t i = 0; i < lenth; i++){
+		for(int i = 0; i < lenth; i++){
 			List_delete(dst[i]);
 		} free(dst);
 	}

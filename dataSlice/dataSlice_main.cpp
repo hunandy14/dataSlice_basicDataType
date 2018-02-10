@@ -194,29 +194,27 @@ void List_getStr(List* _this, Str* (*dst), int* num){
 
 auto Data_Slice(List* v) {
 	vector<List*> out_data;
-	//vector<vector<string>> out_data;
 
 	size_t item_len = 0, idx = 0, line_len=0;
 	size_t end_mode = 0; // 0.補0;  1.補英文
 	
 	List_basic* l=v->listHead->next;
 	Str currStr = nullptr;
-	Str next_Str = nullptr;
-	Str next2_Str = nullptr;
+	Str nextStr = nullptr;
 	// 補數字
 	auto Append_Num = [&]() {
-		if(!isalpha(next_Str[0])) { // 下一個是數字就接著補上
+		if(!isalpha(nextStr[0])) { // 下一個是數字就接著補上
 			++idx, l=l->next;
-			List_basic_append(out_data[line_len-1]->listEnd, next_Str);
+			List_basic_append(out_data[line_len-1]->listEnd, nextStr);
 		}
 		--item_len;
 	};
 
 	// 開始處理
 	for(; idx < (v->ListNum)-2; ++idx and l, l=l->next) {
-		currStr   = l->data;
-		next_Str  = l->next->data;
-		next2_Str = l->next->next->data;
+		currStr = l->data;
+		nextStr = l->next->data;
+		Str next2_Str = l->next->next->data;
 		// 是頭長度時
 		if(item_len == 0){
 			++line_len;
@@ -242,8 +240,8 @@ auto Data_Slice(List* v) {
 	}
 
 	// 結尾處理
-	currStr   = l->data;
-	next_Str  = l->next->data;
+	currStr = l->data;
+	nextStr = l->next->data;
 	if(item_len==1 and end_mode ==0) {
 		// 補一組
 		List_append(out_data[line_len-1], currStr);
@@ -256,7 +254,7 @@ auto Data_Slice(List* v) {
 			out_data.push_back(temp);
 		} else {
 			++idx, l=l->next;
-			List_append(out_data[line_len-1], next_Str);
+			List_append(out_data[line_len-1], nextStr);
 
 		}
 	}

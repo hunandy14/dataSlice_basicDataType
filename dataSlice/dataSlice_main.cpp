@@ -18,8 +18,6 @@ constexpr char file_name[] = "str.txt";
 	printf("%s \t\t # %s::%d --> \"%s()\" \n" , \
 		(msg) , __FILENAME__, __LINE__, __FUNCTION__)
 
-vector<string> ReadFile(string file_name);
-vector<vector<string>> Data_Slice(vector<string>& v);
 
 //==================================================================
 typedef char* Str;
@@ -122,7 +120,7 @@ void List_delete(List* _this){
 	List_dtor(_this);
 	free(_this);
 }
-
+//------------------------------------------------------------------
 void List_print(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
@@ -177,23 +175,11 @@ void List_loadFile(List* _this, const char* filename){
 	List_strSlice(_this, contacts);
 	free(contacts);
 }
-void List_getStr(List* _this, Str* (*dst), int* num){
-	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+void Data_Slice(List*** dst, int* lenth, List* v) {
+	if (!dst) { POINT_IS_NULL("point is NULL"); return; }
+	if (*dst) { POINT_IS_NULL("point is invalid"); return; }
 
-	Str* temp = (Str*)malloc(sizeof(Str)*(_this->ListNum-1));
-	size_t idx = 0;
-	List_basic* l=_this->listHead->next;
-	for(;l; l=l->next){
-		temp[idx] = (char*)malloc(sizeof(char)*strlen(l->data)+1);
-		strcpy(temp[idx++], l->data);
-	}
-
-	*dst = temp;
-	*num = _this->ListNum;
-}
-
-auto Data_Slice(List* v) {
-	vector<List*> out_data;
+	List** temp_data = (List**)malloc(sizeof(List*) * v->ListNum);
 
 	size_t item_len = 0, idx = 0, line_len=0;
 	size_t end_mode = 0; // 0.補0;  1.補英文
@@ -205,7 +191,7 @@ auto Data_Slice(List* v) {
 	auto Append_Num = [&]() {
 		if(!isalpha(nextStr[0])) { // 下一個是數字就接著補上
 			++idx, l=l->next;
-			List_basic_append(out_data[line_len-1]->listEnd, nextStr);
+			List_basic_append(temp_data[line_len-1]->listEnd, nextStr);
 		}
 		--item_len;
 	};
@@ -217,15 +203,14 @@ auto Data_Slice(List* v) {
 		Str next2_Str = l->next->next->data;
 		// 是頭長度時
 		if(item_len == 0){
-			++line_len;
 			item_len = stoi(currStr);
-			List* temp = List_new();
-			List_append(temp, currStr);
-			out_data.push_back(temp);
+			temp_data[line_len] = List_new();
+			List_append(temp_data[line_len], currStr);
+			++line_len;
 		}
 		// 非頭長度是英文遞減
 		else if(isalpha(currStr[0])) {
-			List_append(out_data[line_len-1], currStr);
+			List_append(temp_data[line_len-1], currStr);
 			if(item_len == 1) { // 最後一個檢查
 				if(isalpha(next2_Str[0])) { // 最後一組缺數字
 					--item_len;
@@ -244,40 +229,59 @@ auto Data_Slice(List* v) {
 	nextStr = l->next->data;
 	if(item_len==1 and end_mode ==0) {
 		// 補一組
-		List_append(out_data[line_len-1], currStr);
+		List_append(temp_data[line_len-1], currStr);
 		// 補數字
 		Append_Num();
 	} else {
 		if(end_mode==0) {
-			List* temp = List_new();
-			List_append(temp, currStr);
-			out_data.push_back(temp);
+			temp_data[line_len] = List_new();
+			List_append(temp_data[line_len], currStr);
 		} else {
 			++idx, l=l->next;
-			List_append(out_data[line_len-1], nextStr);
+			List_append(temp_data[line_len-1], nextStr);
 
 		}
 	}
 
-	return out_data;
+	// 輸出數據
+	*lenth = line_len;
+	*dst = (List**)malloc(sizeof(List*) * line_len);
+	for(size_t i = 0; i < line_len; i++){
+		(*dst)[i] = temp_data[i];
+	} if(temp_data) free(temp_data);
+
 }
 
 
 //==================================================================
 int main(int argc, char const *argv[]) {
+
 	// 初始化數據
 	List* list = List_new();
-	// 載入文字(消除空格與跳行)
+
+	// 載入文字(切割空格與跳行)
 	List_loadFile(list, "str.txt");
+
 	// 解析格式
-	auto data = Data_Slice(list);
+	int lenth = 0;
+	List** dst = nullptr;
+	Data_Slice(&dst, &lenth, list);
+
 	// 查看二維陣列
-	for(size_t j = 0; j < data.size(); j++){
-		List* _this = data[j];
+	for(size_t j = 0; j < lenth; j++){
+		List* _this = dst[j];
 		for(List_basic* l=_this->listHead->next; l; l=l->next){
 			cout << l->data <<  ", ";
 		} cout << endl;
 	} cout << endl;
 
-	List_dtor(list);
+
+
+	// 釋放內存
+	if(dst){
+		for(size_t i = 0; i < lenth; i++){
+			List_delete(dst[i]);
+		} free(dst);
+	}
+	if(list) List_dtor(list);
 }

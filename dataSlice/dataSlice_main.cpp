@@ -197,7 +197,7 @@ void Data_Slice(List*** dst, int* lenth, const List* src) {
 		char* next2_Str = l->next->next->data;
 		// 是頭長度時
 		if(item_len == 0){
-			item_len = stoi(currStr);
+			item_len = atoi(currStr);
 			temp_data[line_len] = List_new();
 			List_append(temp_data[line_len], currStr);
 			++line_len;
@@ -262,8 +262,8 @@ int main(int argc, char const *argv[]) {
 
 	// 查看二維陣列
 	for(int j = 0; j < lenth; j++){
-		List* _this = dst[j];
-		for(ListNode* l=_this->listHead->next; l; l=l->next){
+		ListNode* node = dst[j]->listHead->next;
+		for(ListNode* l = node; l; l = l->next){
 			cout << l->data;
 			if(l->next) 	cout <<  ", ";
 		} cout << endl;

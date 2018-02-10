@@ -33,13 +33,13 @@ void List_basic_ctor(List_basic* _this, const char* s = nullptr){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	// 建立類別所指向資料
-	char* temp = nullptr;
+	char* buff = nullptr;
 	if(s){
-		temp = (char*)malloc(sizeof(char)*strlen(s)+1);
-		strcpy(temp, s);
+		buff = (char*)malloc(sizeof(char)*strlen(s)+1);
+		strcpy(buff, s);
 	}
 	// 放入類別的指向
-	_this->data = temp;
+	_this->data = buff;
 	_this->next = nullptr;
 }
 void List_basic_dtor(List_basic* _this){
@@ -63,6 +63,18 @@ void List_basic_delete(List_basic* _this){
 	// 釋放類別內的資源
 	List_basic_dtor(_this);
 	free(_this);
+}
+//------------------------------------------------------------------
+void List_basic_append(List_basic* _this, const char* s) {
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+	
+	int buff_len = strlen(s) + strlen(_this->data);
+	char* buff = (char*)malloc(sizeof(char)*buff_len + 1);
+	strcpy(buff, _this->data);
+	strcat(buff, s);
+
+	if(_this->data) free(_this->data);
+	_this->data = buff;
 }
 
 
@@ -136,8 +148,7 @@ void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
 		List_append(_this, pch);
 	}
 }
-
-//==================================================================
+//------------------------------------------------------------------
 void read_ContactsRaw(const char* filename, char** buf) {
 
 	if(filename==nullptr and buf!=nullptr){
@@ -158,7 +169,7 @@ void read_ContactsRaw(const char* filename, char** buf) {
 	fread(*buf, 1, lSize, pFile);
 	fclose(pFile);
 }
-void List_ctor_file(List* _this, const char* filename){
+void List_loadFile(List* _this, const char* filename){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	char* contacts = nullptr;
@@ -182,8 +193,8 @@ void List_getStr(List* _this, Str* (*dst), int* num){
 }
 
 auto Data_Slice(List* v) {
-	//vector<List> data;
-	vector<vector<string>> out_data;
+	vector<List*> out_data;
+	//vector<vector<string>> out_data;
 
 	size_t item_len = 0, idx = 0, line_len=0;
 	size_t end_mode = 0; // 0.補0;  1.補英文
@@ -196,7 +207,7 @@ auto Data_Slice(List* v) {
 	auto Append_Num = [&]() {
 		if(!isalpha(next_Str[0])) { // 下一個是數字就接著補上
 			++idx, l=l->next;
-			out_data[line_len-1][out_data[line_len-1].size()-1] += next_Str;
+			List_basic_append(out_data[line_len-1]->listEnd, next_Str);
 		}
 		--item_len;
 	};
@@ -210,11 +221,13 @@ auto Data_Slice(List* v) {
 		if(item_len == 0){
 			++line_len;
 			item_len = stoi(currStr);
-			out_data.push_back(vector<string> {currStr});
+			List* temp = List_new();
+			List_append(temp, currStr);
+			out_data.push_back(temp);
 		}
 		// 非頭長度是英文遞減
 		else if(isalpha(currStr[0])) {
-			out_data[line_len-1].push_back(currStr);
+			List_append(out_data[line_len-1], currStr);
 			if(item_len == 1) { // 最後一個檢查
 				if(isalpha(next2_Str[0])) { // 最後一組缺數字
 					--item_len;
@@ -229,17 +242,22 @@ auto Data_Slice(List* v) {
 	}
 
 	// 結尾處理
+	currStr   = l->data;
+	next_Str  = l->next->data;
 	if(item_len==1 and end_mode ==0) {
 		// 補一組
-		out_data[line_len-1].push_back(currStr);
+		List_append(out_data[line_len-1], currStr);
 		// 補數字
 		Append_Num();
 	} else {
 		if(end_mode==0) {
-			out_data.push_back(vector<string> {currStr}); // 補 0
+			List* temp = List_new();
+			List_append(temp, currStr);
+			out_data.push_back(temp);
 		} else {
 			++idx, l=l->next;
-			out_data[line_len-1].push_back(next_Str); // 補英文
+			List_append(out_data[line_len-1], next_Str);
+
 		}
 	}
 
@@ -251,30 +269,17 @@ auto Data_Slice(List* v) {
 int main(int argc, char const *argv[]) {
 	// 初始化數據
 	List* list = List_new();
-	
-	// 載入文字(自動消除空格與跳行)
-	List_ctor_file(list, "str.txt");
-	//List_print(&list);
-	
+	// 載入文字(消除空格與跳行)
+	List_loadFile(list, "str.txt");
 	// 解析格式
 	auto data = Data_Slice(list);
-	//auto data = Data_Slice(v);
 	// 查看二維陣列
-
-	/*for(size_t j = 0; j < data.size(); j++){
-		List* _this = &data[j];
+	for(size_t j = 0; j < data.size(); j++){
+		List* _this = data[j];
 		for(List_basic* l=_this->listHead->next; l; l=l->next){
 			cout << l->data <<  ", ";
 		} cout << endl;
-	} cout << endl;*/
-	
-
-	for(auto&& j : data) {
-		for(auto&& i : j) {
-			cout << i << ", ";
-		}cout << "---" << endl;
-	}
-
+	} cout << endl;
 
 	List_dtor(list);
 }

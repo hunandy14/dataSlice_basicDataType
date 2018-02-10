@@ -148,7 +148,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="str.txt" />
-    <Text Include="str2.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="log.md" />

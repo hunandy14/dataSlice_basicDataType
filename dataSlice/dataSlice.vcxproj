@@ -144,9 +144,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dataSlice.cpp" />
-    <ClCompile Include="dataSlice2.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="read.cpp" />
+    <ClCompile Include="dataSlice_main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="str.txt" />

@@ -21,27 +21,6 @@ constexpr char file_name[] = "str.txt";
 vector<string> ReadFile(string file_name);
 vector<vector<string>> Data_Slice(vector<string>& v);
 
-void read_ContactsRaw(const char* filename, char** buf) {
-
-	if(filename==nullptr and buf!=nullptr){
-		perror("Error read_ContactsRaw input");
-	}
-
-	FILE *pFile = fopen(filename,"rb");
-	if (pFile==NULL) {fputs ("File error",stderr); exit (1);}
-
-	fseek(pFile, 0, SEEK_END);
-	long lSize = ftell(pFile);
-	rewind(pFile);
-
-	*buf = (char*) malloc (sizeof(char)*(lSize+1));
-	if (*buf == nullptr) {fputs ("Memory error",stderr); exit (2);}
-	(*buf)[lSize] = '\0';
-
-	fread(*buf, 1, lSize, pFile);
-	fclose(pFile);
-}
-
 //==================================================================
 typedef char* Str;
 
@@ -94,7 +73,6 @@ struct List{
 	List_basic* listEnd;
 	int ListNum;
 };
-
 void List_ctor(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 

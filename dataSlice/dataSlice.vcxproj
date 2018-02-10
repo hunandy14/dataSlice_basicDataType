@@ -152,6 +152,9 @@
     <Text Include="str.txt" />
     <Text Include="str2.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="log.md" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -36,4 +36,9 @@
       <Filter>資源檔</Filter>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="log.md">
+      <Filter>資源檔</Filter>
+    </None>
+  </ItemGroup>
 </Project>

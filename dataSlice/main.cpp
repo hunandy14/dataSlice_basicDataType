@@ -44,11 +44,46 @@ void read_ContactsRaw(const char* filename, char** buf) {
 
 //==================================================================
 typedef char* Str;
+
 typedef struct List_basic List_basic;
 struct List_basic{
 	Str data;
 	List_basic* next;
-}; 
+};
+void List_basic_ctor(List_basic* _this, const char* s = nullptr){
+	if(_this == nullptr) return;
+	// 建立類別所指向資料
+	char* temp = nullptr;
+	if(s){
+		temp = (char*)malloc(sizeof(char)*strlen(s)+1);
+		strcpy(temp, s);
+	}
+	// 放入類別的指向
+	_this->data = temp;
+	_this->next = nullptr;
+}
+void List_basic_dtor(List_basic* _this){
+	if(_this == nullptr) return;
+	// 刪除類別所指向資料
+	if(_this->data) free(_this->data);
+	// 移出類別的指向
+	_this->data = nullptr;
+	_this->next = nullptr;
+}
+List_basic* List_basic_new(const char* s = nullptr){
+	// 建立類別內的資料
+	List_basic* _this = (List_basic*)malloc(sizeof(List_basic));
+	List_basic_ctor(_this, s);
+	return _this;
+}
+void List_basic_delete(List_basic* _this){
+	// 釋放類別內的資源
+	List_basic_dtor(_this);
+	if(_this) free(_this);
+}
+
+
+//==================================================================
 typedef struct List List;
 struct List{
 	List_basic* listHead;
@@ -65,16 +100,10 @@ void List_print(List* _this){
 }
 void List_append(List* _this, const char* s){
 	if (!_this) POINT_IS_NULL("point is NULL");
-
-	char* temp = (char*)malloc(sizeof(char)*strlen(s)+1);
-	strcpy(temp, s);
-
-	_this->listEnd->next = (List_basic*)malloc(sizeof(List_basic));
-	_this->listEnd = _this->listEnd->next;
-	++_this->ListNum;
-
-	_this->listEnd->data = temp;
-	_this->listEnd->next = nullptr;
+	List_basic* new_node = List_basic_new(s);
+	_this->listEnd->next = new_node; // 把新點接上
+	_this->listEnd = new_node;       // 更新結尾點
+	++_this->ListNum;                // 累計計數
 }
 void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
 	if (!_this) POINT_IS_NULL("point is NULL");
@@ -86,6 +115,13 @@ void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
 	}
 }
 
+List* List_new(){
+	List* _this = (List*)malloc(sizeof(List));;
+	_this->listHead = List_basic_new();
+	_this->listEnd = _this->listHead;
+	_this->ListNum = 0;
+	return _this;
+}
 void List_ctor(List* _this, const char* filename){
 	if (!_this) POINT_IS_NULL("point is NULL");
 
@@ -98,13 +134,14 @@ void List_dtor(List* _this){
 	if (!_this) POINT_IS_NULL("point is NULL");
 
 	if(_this->listHead){
+		// 釋放鏈結資源
 		List_basic* temp = nullptr;
 		for(List_basic* l=_this->listHead->next; l; l=l->next){
-			if(temp) free(temp);
+			List_basic_delete(temp);
 			temp=l;
-		} if(temp) free(temp);
-
-		free(_this->listHead);
+		} List_basic_delete(temp);
+		// 釋放本地資源
+		List_basic_delete(_this->listHead);
 		_this->listHead = nullptr;
 		_this->ListNum = 0;
 	}
@@ -113,7 +150,7 @@ void List_dtor(List* _this){
 void List_getStr(List* _this, Str* (*dst), int* num){
 	if (!_this) POINT_IS_NULL("point is NULL");
 
-	char** temp = (char**)malloc(sizeof(char*)*(_this->ListNum-1));
+	Str* temp = (Str*)malloc(sizeof(Str)*(_this->ListNum-1));
 	size_t idx = 0;
 	List_basic* l=_this->listHead->next;
 	for(;l; l=l->next){
@@ -124,6 +161,7 @@ void List_getStr(List* _this, Str* (*dst), int* num){
 	*dst = temp;
 	*num = _this->ListNum;
 }
+
 
 //==================================================================
 auto Data_Slice(List* v) {
@@ -198,19 +236,17 @@ int main(int argc, char const *argv[]) {
 	
 
 	// 初始化數據
-	List list{};
-	list.listHead = (List_basic*)malloc(sizeof(List_basic));
-	list.listEnd = list.listHead;
-	list.ListNum = 0;
+
+	List* list = List_new();
 	
 	// 載入文字(自動消除空格與跳行)
-	List_ctor(&list, "str.txt");
+	List_ctor(list, "str.txt");
 	//List_print(&list);
 
 	// 輸出整後後的陣列
 	char** Contact = nullptr;
 	int num = 0;
-	List_getStr(&list, &Contact, &num);
+	List_getStr(list, &Contact, &num);
 
 	vector<string> v(num);
 	// 印出
@@ -220,7 +256,7 @@ int main(int argc, char const *argv[]) {
 	}
 	
 	// 解析格式
-	auto data = Data_Slice(&list);
+	auto data = Data_Slice(list);
 	//auto data = Data_Slice(v);
 	// 查看二維陣列
 
@@ -230,6 +266,8 @@ int main(int argc, char const *argv[]) {
 			cout << l->data <<  ", ";
 		} cout << endl;
 	} cout << endl;*/
+	
+
 	for(auto&& j : data) {
 		for(auto&& i : j) {
 			cout << i << ", ";
@@ -237,5 +275,5 @@ int main(int argc, char const *argv[]) {
 	}
 
 
-	List_dtor(&list);
+	List_dtor(list);
 }

@@ -51,7 +51,8 @@ struct List_basic{
 	List_basic* next;
 };
 void List_basic_ctor(List_basic* _this, const char* s = nullptr){
-	if(_this == nullptr) return;
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+
 	// 建立類別所指向資料
 	char* temp = nullptr;
 	if(s){
@@ -63,7 +64,8 @@ void List_basic_ctor(List_basic* _this, const char* s = nullptr){
 	_this->next = nullptr;
 }
 void List_basic_dtor(List_basic* _this){
-	if(_this == nullptr) return;
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+
 	// 刪除類別所指向資料
 	if(_this->data) free(_this->data);
 	// 移出類別的指向
@@ -77,9 +79,11 @@ List_basic* List_basic_new(const char* s = nullptr){
 	return _this;
 }
 void List_basic_delete(List_basic* _this){
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+
 	// 釋放類別內的資源
 	List_basic_dtor(_this);
-	if(_this) free(_this);
+	free(_this);
 }
 
 
@@ -91,7 +95,7 @@ struct List{
 	int ListNum;
 };
 void List_print(List* _this){
-	if (!_this) POINT_IS_NULL("point is NULL");
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	if(_this==NULL) 
 	for(List_basic* l=_this->listHead->next; l; l=l->next){
@@ -99,14 +103,15 @@ void List_print(List* _this){
 	}
 }
 void List_append(List* _this, const char* s){
-	if (!_this) POINT_IS_NULL("point is NULL");
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+
 	List_basic* new_node = List_basic_new(s);
 	_this->listEnd->next = new_node; // 把新點接上
 	_this->listEnd = new_node;       // 更新結尾點
 	++_this->ListNum;                // 累計計數
 }
 void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
-	if (!_this) POINT_IS_NULL("point is NULL");
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	char* buff = (char*)malloc(sizeof(char)*strlen(src)+1);
 	strcpy(buff, src);
@@ -115,40 +120,54 @@ void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
 	}
 }
 
-List* List_new(){
-	List* _this = (List*)malloc(sizeof(List));;
+void List_ctor(List* _this){
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+
 	_this->listHead = List_basic_new();
 	_this->listEnd = _this->listHead;
 	_this->ListNum = 0;
+}
+void List_dtor(List* _this){
+	if (!_this) { POINT_IS_NULL("point is NULL"); }
+
+	if(_this->listHead){
+		// 釋放鏈結資源
+		List_basic* temp = nullptr;
+		for(List_basic* l=_this->listHead->next; l; l=l->next){
+			if(temp)
+				List_basic_delete(temp);
+			temp=l;
+		} List_basic_delete(temp);
+		List_basic_delete(_this->listHead);
+	}
+
+	// 釋放本地資源
+	_this->listHead = nullptr;
+	_this->listEnd = nullptr;
+	_this->ListNum = 0;
+}
+List* List_new(){
+	List* _this = (List*)malloc(sizeof(List));;
+	List_ctor(_this);
 	return _this;
 }
-void List_ctor(List* _this, const char* filename){
-	if (!_this) POINT_IS_NULL("point is NULL");
+void List_delete(List* _this){
+	if (!_this) { POINT_IS_NULL("point is NULL"); return;}
+	
+	List_dtor(_this);
+	free(_this);
+}
+
+void List_ctor_file(List* _this, const char* filename){
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	char* contacts = nullptr;
 	read_ContactsRaw(filename, &contacts);
 	List_strSlice(_this, contacts);
 	free(contacts);
 }
-void List_dtor(List* _this){
-	if (!_this) POINT_IS_NULL("point is NULL");
-
-	if(_this->listHead){
-		// 釋放鏈結資源
-		List_basic* temp = nullptr;
-		for(List_basic* l=_this->listHead->next; l; l=l->next){
-			List_basic_delete(temp);
-			temp=l;
-		} List_basic_delete(temp);
-		// 釋放本地資源
-		List_basic_delete(_this->listHead);
-		_this->listHead = nullptr;
-		_this->ListNum = 0;
-	}
-}
-
 void List_getStr(List* _this, Str* (*dst), int* num){
-	if (!_this) POINT_IS_NULL("point is NULL");
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	Str* temp = (Str*)malloc(sizeof(Str)*(_this->ListNum-1));
 	size_t idx = 0;
@@ -161,7 +180,6 @@ void List_getStr(List* _this, Str* (*dst), int* num){
 	*dst = temp;
 	*num = _this->ListNum;
 }
-
 
 //==================================================================
 auto Data_Slice(List* v) {
@@ -240,7 +258,7 @@ int main(int argc, char const *argv[]) {
 	List* list = List_new();
 	
 	// 載入文字(自動消除空格與跳行)
-	List_ctor(list, "str.txt");
+	List_ctor_file(list, "str.txt");
 	//List_print(&list);
 
 	// 輸出整後後的陣列

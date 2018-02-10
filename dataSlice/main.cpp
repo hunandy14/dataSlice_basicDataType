@@ -94,31 +94,6 @@ struct List{
 	List_basic* listEnd;
 	int ListNum;
 };
-void List_print(List* _this){
-	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
-
-	if(_this==NULL) 
-	for(List_basic* l=_this->listHead->next; l; l=l->next){
-		cout << l->data << endl;
-	}
-}
-void List_append(List* _this, const char* s){
-	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
-
-	List_basic* new_node = List_basic_new(s);
-	_this->listEnd->next = new_node; // 把新點接上
-	_this->listEnd = new_node;       // 更新結尾點
-	++_this->ListNum;                // 累計計數
-}
-void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
-	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
-
-	char* buff = (char*)malloc(sizeof(char)*strlen(src)+1);
-	strcpy(buff, src);
-	for(char* pch = strtok(buff, delim); pch; pch = strtok(NULL, delim)){
-		List_append(_this, pch);
-	}
-}
 
 void List_ctor(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
@@ -153,9 +128,35 @@ List* List_new(){
 }
 void List_delete(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return;}
-	
+
 	List_dtor(_this);
 	free(_this);
+}
+
+void List_print(List* _this){
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+
+	if(_this==NULL) 
+	for(List_basic* l=_this->listHead->next; l; l=l->next){
+		cout << l->data << endl;
+	}
+}
+void List_append(List* _this, const char* s){
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+
+	List_basic* new_node = List_basic_new(s);
+	_this->listEnd->next = new_node; // 把新點接上
+	_this->listEnd = new_node;       // 更新結尾點
+	++_this->ListNum;                // 累計計數
+}
+void List_strSlice(List* _this, const char* src, const char* delim = " \n\r"){
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
+
+	char* buff = (char*)malloc(sizeof(char)*strlen(src)+1);
+	strcpy(buff, src);
+	for(char* pch = strtok(buff, delim); pch; pch = strtok(NULL, delim)){
+		List_append(_this, pch);
+	}
 }
 
 void List_ctor_file(List* _this, const char* filename){

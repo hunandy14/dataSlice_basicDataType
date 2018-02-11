@@ -17,8 +17,8 @@ struct ListNode{
 };
 typedef struct List List;
 struct List{
-	ListNode* listHead;
-	ListNode* listEnd;
+	ListNode* const begin;
+	ListNode* end;
 	int ListNum;
 };
 

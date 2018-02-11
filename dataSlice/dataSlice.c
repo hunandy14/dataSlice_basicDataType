@@ -29,7 +29,7 @@ void List_basic_ctor(ListNode* _this, const char* s){
 
 	char* buff = nullptr;
 	if(s){
-		buff = (char*)malloc(sizeof(char)*strlen(s)+1);
+		buff = malloc(sizeof(char)*strlen(s)+1);
 		strcpy(buff, s);
 	}
 	_this->data = buff;
@@ -43,7 +43,7 @@ void List_basic_dtor(ListNode* _this){
 	_this->next = nullptr;
 }
 ListNode* List_basic_new(const char* s){
-	ListNode* _this = (ListNode*)malloc(sizeof(ListNode));
+	ListNode* _this = malloc(sizeof(ListNode));
 	List_basic_ctor(_this, s);
 	return _this;
 }
@@ -58,7 +58,7 @@ void List_basic_append(ListNode* _this, const char* s) {
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	int buff_len = strlen(s) + strlen(_this->data);
-	char* buff = (char*)malloc(sizeof(char)*buff_len + 1);
+	char* buff = malloc(sizeof(char)*buff_len + 1);
 	strcpy(buff, _this->data);
 	strcat(buff, s);
 
@@ -71,31 +71,31 @@ void List_basic_append(ListNode* _this, const char* s) {
 void List_ctor(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
-	_this->listHead = List_basic_new(nullptr);
-	_this->listEnd = _this->listHead;
+	*(ListNode**)&(_this->begin) = List_basic_new(nullptr);
+	_this->end = _this->begin;
 	_this->ListNum = 0;
 }
 void List_dtor(List* _this){
-	if (!_this) { POINT_IS_NULL("point is NULL"); }
+	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
-	if(_this->listHead){
+	if(_this->begin){
 		// 釋放鏈結資源
 		ListNode* node = nullptr;
-		for(ListNode* l=_this->listHead->next; l; l=l->next){
+		for(ListNode* l=_this->begin->next; l; l=l->next){
 			if(node)
 				List_basic_delete(node);
 			node=l;
 		} List_basic_delete(node);
-		List_basic_delete(_this->listHead);
+		List_basic_delete(_this->begin);
 	}
 
 	// 釋放本地資源
-	_this->listHead = nullptr;
-	_this->listEnd = nullptr;
+	*(ListNode**)&(_this->begin) = nullptr;
+	_this->end = nullptr;
 	_this->ListNum = 0;
 }
 List* List_new(){
-	List* _this = (List*)malloc(sizeof(List));
+	List* _this = malloc(sizeof(List));
 	List_ctor(_this);
 	return _this;
 }
@@ -109,7 +109,7 @@ void List_delete(List* _this){
 void List_print(List* _this){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
-	for(ListNode* l=_this->listHead->next; l; l=l->next){
+	for(ListNode* l=_this->begin->next; l; l=l->next){
 		printf("%s, ", l->data);
 	}
 }
@@ -117,17 +117,17 @@ void List_append(List* _this, const char* s){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
 	ListNode* new_node = List_basic_new(s);
-	_this->listEnd->next = new_node; // 把新點接上
-	_this->listEnd = new_node;       // 更新結尾點
+	_this->end->next = new_node; // 把新點接上
+	_this->end = new_node;       // 更新結尾點
 	++_this->ListNum;                // 累計計數
 }
 void List_strSlice(List* _this, const char* src, const char* delim){
 	if (!_this) { POINT_IS_NULL("point is NULL"); return; }
 
-	char* buff = (char*)malloc(sizeof(char)*strlen(src)+1);
+	char* buff = malloc(sizeof(char)*strlen(src)+1);
 	strcpy(buff, src);
 
-	for(char* pch = strtok(buff, delim); pch; pch = strtok(NULL, delim)){
+	for(char* pch = strtok(buff, delim); pch; pch = strtok(nullptr, delim)){
 		List_append(_this, pch);
 	}
 
@@ -151,7 +151,7 @@ void read_ContactsRaw(const char* filename, char** buf) {
 	long lSize = ftell(pFile);
 	rewind(pFile);
 
-	*buf = (char*) malloc (sizeof(char)*(lSize+1));
+	*buf = malloc (sizeof(char)*(lSize+1));
 	if (*buf == nullptr) {fputs ("Memory error",stderr); exit (2);}
 	(*buf)[lSize] = '\0';
 
@@ -180,7 +180,7 @@ void Data_Slice(List*** dst, int* lenth, const List* src) {
 	if (!dst) { POINT_IS_NULL("point is NULL"); return; }
 	if (*dst) { POINT_IS_NULL("point is invalid"); return; }
 
-	List** temp_data = (List**)malloc(sizeof(List*) * src->ListNum);
+	List** temp_data = malloc(sizeof(List*) * src->ListNum);
 	int item_len = 0, line_len=0;
 
 	// 補足越界讀取的緩衝
@@ -188,7 +188,7 @@ void Data_Slice(List*** dst, int* lenth, const List* src) {
 	List_append((List*)src, "");
 
 	// 開始處理
-	for(ListNode* l = src->listHead->next; l->next->next; l=l->next) {
+	for(ListNode* l = src->begin->next; l->next->next; l=l->next) {
 		const char* currStr = l->data;
 		const char* nextStr = l->next->data;
 		const char* next2_Str = l->next->next->data;
@@ -215,14 +215,14 @@ void Data_Slice(List*** dst, int* lenth, const List* src) {
 			// 下一個是數字就補上
 			if(!isalpha(nextStr[0])) {
 				l=l->next;
-				List_basic_append(temp_data[line_len-1]->listEnd, nextStr);
+				List_basic_append(temp_data[line_len-1]->end, nextStr);
 			}
 			--item_len;
 		}
 	}
 	// 輸出數據
 	*lenth = line_len;
-	*dst = (List**)malloc(sizeof(List*) * line_len);
+	*dst = malloc(sizeof(List*) * line_len);
 	for(int i = 0; i < line_len; i++){
 		(*dst)[i] = temp_data[i]; // move
 	} if(temp_data) free(temp_data);
@@ -246,7 +246,7 @@ void use_DataSlice(const char* filename){
 
 	// 查看二維陣列
 	for(int j = 0; j < lenth; j++){
-		ListNode* node = dst[j]->listHead->next;
+		ListNode* node = dst[j]->begin->next;
 		for(ListNode* l = node; l; l = l->next){
 			printf("%s", l->data);
 			if(l->next) printf(", ");

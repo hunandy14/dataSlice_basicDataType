@@ -42,6 +42,7 @@ void read_ContactsRaw(const char * filename, char ** buf);
 void List_loadFile(List * _this, const char * filename);
 void List_loadConsole(List * _this);
 void Data_Slice(List *** dst, int * lenth, const List * src);
+void use_DataSlice(const char * filename);
 //==================================================================
 
 

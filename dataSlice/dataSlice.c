@@ -7,7 +7,6 @@ Final: 2018/02/10
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #define __FILENAME__ strrchr("\\" __FILE__, '\\') + 1
 #define POINT_IS_NULL(msg) \
@@ -131,6 +130,12 @@ void List_strSlice(List* _this, const char* src, const char* delim){
 	for(char* pch = strtok(buff, delim); pch; pch = strtok(NULL, delim)){
 		List_append(_this, pch);
 	}
+
+	/*char *next = nullptr;
+	char *pch  = strtok_s(buff, delim, &next);
+	for(;pch; pch = strtok_s(nullptr, delim, &next)){
+		List_append(_this, pch);
+	} next = pch = nullptr;*/
 }
 //------------------------------------------------------------------
 void read_ContactsRaw(const char* filename, char** buf) {
@@ -221,4 +226,40 @@ void Data_Slice(List*** dst, int* lenth, const List* src) {
 	for(int i = 0; i < line_len; i++){
 		(*dst)[i] = temp_data[i]; // move
 	} if(temp_data) free(temp_data);
+}
+void use_DataSlice(const char* filename){
+	// 初始化數據
+	List* list = List_new();
+
+	// 載入文字(切割空格與跳行)
+	if(filename){
+		List_loadFile(list, filename);
+	} else{
+		List_loadConsole(list);
+	}
+	//List_print(list);
+
+	// 解析格式
+	int lenth = 0;
+	List** dst = nullptr;
+	Data_Slice(&dst, &lenth, list);
+
+	// 查看二維陣列
+	for(int j = 0; j < lenth; j++){
+		ListNode* node = dst[j]->listHead->next;
+		for(ListNode* l = node; l; l = l->next){
+			printf("%s", l->data);
+			if(l->next) printf(", ");
+		} printf("-\n");
+	} printf("\n");
+
+
+
+	// 釋放內存
+	if(dst){
+		for(int i = 0; i < lenth; i++){
+			List_delete(dst[i]);
+		} free(dst);
+	}
+	if(list) List_dtor(list);
 }
